@@ -54,7 +54,7 @@ async function harvest() {
 
 
 async function swapBfM(amountIn) {
-	var	almostout = await pricing(dinero,bananaContract,wmaticContract)*0.9 
+	var	almostout = await pricing(amountIn,bananaContract,wmaticContract)*0.9 
 	var amountOutMin = await Math.round(almostout) 
 	const gasPrice = await web3.eth.getGasPrice()
 	const swaping =await ApeRouterV2.methods.swapExactTokensForETH(
@@ -65,7 +65,7 @@ async function swapBfM(amountIn) {
 		web3.utils.toHex(Math.round(Date.now()/1000)+60*20),
 		).send(
 		{
-			amounts : [dinero,dinero/4],
+			amounts : [amountIn,amountOutMin],
     	    from : wallet.address,
     	    gas: 2000000,
     	    gasPrice: gasPrice
@@ -75,7 +75,7 @@ async function swapBfM(amountIn) {
 	return swaping
 }
 async function liquidity(amountTokenDesired,amountETHMin) {
-	var amountTokenMin = Math.round(dinero*0.95) //taking care of slipperage
+	var amountTokenMin = Math.round(amountTokenDesired*0.95) //taking care of slipperage
 	const gasPrice = await web3.eth.getGasPrice()
 	const addliquiditytx =await ApeRouterV2.methods.addLiquidityETH(
 		bananaContract,
@@ -86,7 +86,7 @@ async function liquidity(amountTokenDesired,amountETHMin) {
 		web3.utils.toHex(Math.round(Date.now()/1000)+60*20),
 		).send(
 		{
-			amounts : [dinero,matic],
+			amounts : [amountTokenDesired,amountETHMin],
 			value : amountETHMin,
     	    from : wallet.address,
     	    gas: 200000,
@@ -112,7 +112,7 @@ async function AutoCompound(){
     const txCost = web3.utils.fromWei(gasPrice.toString(),'ether') * gasLimit 
     console.log("Current Balance, GasPrice, Transaction Cost")
     console.log(web3.utils.fromWei(curBanana.toString(),'ether'),gasPrice,txCost)
-    if(web3.utils.fromWei(curBanana.toString(),'ether') > txCost*5) {
+    if(web3.utils.fromWei(curBanana.toString(),'ether') > txCost*1) {
     	console.log('Harvesting')
         const reclaim=await harvest()
         setTimeout(() => {  console.log("Pause!"); }, 5000);
