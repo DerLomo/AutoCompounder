@@ -1,7 +1,6 @@
 const Web3 = require('web3')
 //WEB3 Config
 const web3 = new Web3('https://rpc-mainnet.maticvigil.com/')
-//Here goes the private key of your wallet
 const wallet = web3.eth.accounts.wallet.add('')//HERE GOES YOUR PRIVATE KEY
 const gasLimit = 35000
 //Farm's data
@@ -54,10 +53,9 @@ async function harvest() {
 }
 
 
-async function swapBfM(dinero) {
-	var amountIn = dinero
+async function swapBfM(amountIn) {
 	var	almostout = await pricing(dinero,bananaContract,wmaticContract)*0.9 
-	var amountOutMin = await myround(almostout,1) 
+	var amountOutMin = await Math.round(almostout) 
 	const gasPrice = await web3.eth.getGasPrice()
 	const swaping =await ApeRouterV2.methods.swapExactTokensForETH(
 		web3.utils.toHex(amountIn),
@@ -76,10 +74,8 @@ async function swapBfM(dinero) {
 	console.log(`deposit status: ${swaping.status}`)
 	return swaping
 }
-async function liquidity(dinero,matic) {
-	var	amountTokenDesired = dinero
-	var amountTokenMin = myround(dinero*0.95,1) //taking care of slipperage
-	var amountETHMin= matic
+async function liquidity(amountTokenDesired,amountETHMin) {
+	var amountTokenMin = Math.round(dinero*0.95) //taking care of slipperage
 	const gasPrice = await web3.eth.getGasPrice()
 	const addliquiditytx =await ApeRouterV2.methods.addLiquidityETH(
 		bananaContract,
@@ -111,7 +107,7 @@ async function deposit(pid,LPamount) {
 }
 async function AutoCompound(){
     const curBanana = await checkRewards()
-    const half = myround(curBanana/2 ,1)
+    const half = Math.round(curBanana/2)
 	const gasPrice = await web3.eth.getGasPrice() 
     const txCost = web3.utils.fromWei(gasPrice.toString(),'ether') * gasLimit 
     console.log("Current Balance, GasPrice, Transaction Cost")
@@ -132,20 +128,5 @@ async function AutoCompound(){
     else{
         console.log('Balance not high enough')
     }
-}
-async function  tests(number) {
-	var number =number
-	const swap = await swapBfM(number)
-    console.log(swap)
-}
-async function TxValueout(txaddress) {
-	const data =await web3.eth.getTransactionReceipt(txaddress)
-	const value=web3.utils.hexToNumberString(data.logs[6].data)
-	console.log(data.logs.length)
-
-}
-function myround(number, precision) {
-    var result = Math.round(number / precision) *  precision;
-    return result;
 }
 AutoCompound()
