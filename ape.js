@@ -1,9 +1,8 @@
 const Web3 = require('web3')
-var Tx = require('ethereumjs-tx').Transaction
 //WEB3 Config
 const web3 = new Web3('https://rpc-mainnet.maticvigil.com/')
 //Here goes the private key of your wallet
-const wallet = web3.eth.accounts.wallet.add('')
+const wallet = web3.eth.accounts.wallet.add('')//HERE GOES YOUR PRIVATE KEY
 const gasLimit = 35000
 //Farm's data
 const farmid = 0
@@ -21,38 +20,20 @@ const bananaContract= "0x5d47bAbA0d66083C52009271faF3F50DCc01023C"
 const usdcContract  = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
 const wethContract  = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"
 const tethContract  = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
+const BMLPContract	= "0x034293F21F1cCE5908BC605CE5850dF2b1059aC0"
 
-const abi =[{
-  "constant": true,
-  "inputs": [
-    {
-      "name": "_owner",
-      "type": "address"
-    }
-  ],
-  "name": "balanceOf",
-  "outputs": [
-    {
-      "name": "balance",
-      "type": "uint256"
-    }
-  ],
-  "payable": false,
-  "type": "function"
-}]
-
+//First we ask the Farm how many rewards do we have pending
 async function checkRewards(){
     const pendingRewards = await MiniApeV2.methods.pendingBanana(farmid,wallet.address).call()
     console.log('Current Ape Rewards : ')
     console.log(web3.utils.fromWei(pendingRewards.toString(),'ether'))
     return pendingRewards
 }
-
-async function pricing(bananos){
-	let amountIn = bananos
-	let amountOut;//X Matic
+//Function to get the price of a pair
+async function pricing(amountIn,ContractIn,ContractOut){
+	let amountOut;
     try {
-        amountOut = await ApeRouterV2.methods.getAmountsOut(web3.utils.toHex(amountIn), [bananaContract,wmaticContract]).call();
+        amountOut = await ApeRouterV2.methods.getAmountsOut(web3.utils.toHex(amountIn), [ContractIn,ContractOut]).call();
     } catch (error) {
     	console.log(error)
     }
@@ -71,29 +52,11 @@ async function harvest() {
 	console.log(`deposit status: ${asktx.status}`)
 	return asktx
 }
-async function swapMfB(dinero) {
-	var amountOutMin =myround(dinero*0.9,1) 
-	const gasPrice = await web3.eth.getGasPrice()
-	const swaping =await ApeRouterV2.methods.swapExactETHForTokens(
-		web3.utils.toHex(amountOutMin),
-		[maticContract,bananaContract],
-		wallet.address,
-		web3.utils.toHex(Math.round(Date.now()/1000)+60*20),
-		).send(
-		{
-			value : dinero,
-    	    from : wallet.address,
-    	    gas: 2000000,
-    	    gasPrice: gasPrice
-    	}
-		)
-	console.log(`deposit status: ${swaping.status}`)
-	return swaping
-}
+
 
 async function swapBfM(dinero) {
 	var amountIn = dinero
-	var	almostout = await pricing(dinero)*0.9 
+	var	almostout = await pricing(dinero,bananaContract,wmaticContract)*0.9 
 	var amountOutMin = await myround(almostout,1) 
 	const gasPrice = await web3.eth.getGasPrice()
 	const swaping =await ApeRouterV2.methods.swapExactTokensForETH(
@@ -111,11 +74,11 @@ async function swapBfM(dinero) {
     	}
 		)
 	console.log(`deposit status: ${swaping.status}`)
-	return swaping //This will be usefull as we need a Matic amount number for the next function
+	return swaping
 }
 async function liquidity(dinero,matic) {
 	var	amountTokenDesired = dinero
-	var amountTokenMin = myround(dinero*0.95,1) 
+	var amountTokenMin = myround(dinero*0.95,1) //taking care of slipperage
 	var amountETHMin= matic
 	const gasPrice = await web3.eth.getGasPrice()
 	const addliquiditytx =await ApeRouterV2.methods.addLiquidityETH(
@@ -147,23 +110,23 @@ async function deposit(pid,LPamount) {
 	console.log(`deposit status: ${depositTx.status}`)
 }
 async function AutoCompound(){
-    const curBanana = 11109762854232904*2 //await checkRewards()
+    const curBanana = await checkRewards()
+    const half = myround(curBanana/2 ,1)
 	const gasPrice = await web3.eth.getGasPrice() 
     const txCost = web3.utils.fromWei(gasPrice.toString(),'ether') * gasLimit 
     console.log("Current Balance, GasPrice, Transaction Cost")
     console.log(web3.utils.fromWei(curBanana.toString(),'ether'),gasPrice,txCost)
-    if(web3.utils.fromWei(curBanana.toString(),'ether') > txCost*4) {
+    if(web3.utils.fromWei(curBanana.toString(),'ether') > txCost*5) {
     	console.log('Harvesting')
-        //const reclaim=await harvest()
+        const reclaim=await harvest()
         setTimeout(() => {  console.log("Pause!"); }, 5000);
         console.log('Swaping')
-        const swap = await swapBfM(curBanana/2)
+        const swap = await swapBfM(half)
         console.log('Adding liquidity')
-        const LP= await liquidity(curBanana/2,await pricing(curBanana/2))
+        const LPs= await liquidity(half,await pricing(half,bananaContract,wmaticContract))
         console.log('Depositing LP tokens')
-        console.log(LP)//sacarLPtx
-        const LPamount =await web3.eth.getTransactionReceipt(txaddress)
-        const deposit = await deposit(0,LPamount)
+        const LPamount=await pricing(curBanana,wmaticContract,BMLPContract)
+        const depositar = await deposit(0,LPamount)
         console.log("Done")
     }
     else{
@@ -178,11 +141,11 @@ async function  tests(number) {
 async function TxValueout(txaddress) {
 	const data =await web3.eth.getTransactionReceipt(txaddress)
 	const value=web3.utils.hexToNumberString(data.logs[6].data)
-	console.log(value)
+	console.log(data.logs.length)
 
 }
-//AutoCompound()
 function myround(number, precision) {
     var result = Math.round(number / precision) *  precision;
     return result;
 }
+AutoCompound()
