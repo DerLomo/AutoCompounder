@@ -97,7 +97,7 @@ async function liquidity(amountTokenDesired,amountETHMin) {
 }
 async function deposit(pid,LPamount) {
 	const gasPrice = await web3.eth.getGasPrice()
-	const depositTx = await MiniApeV2.methods.deposit(pid,LPamount,wallet.address).send(
+	const depositTx = await MiniApeV2.methods.deposit(pid,web3.utils.toHex(LPamount),wallet.address).send(
 	{	
 		from : wallet.address,
 		gas: 200000,
