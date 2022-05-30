@@ -6,6 +6,8 @@ Using the Matic Network, harvesting and reinvesting any pair (APE-MATIC pair by 
 
 Put your new pairs editing the json addresses.
 
+Before running the script remember to put your private wallet key in the script
+
 Installation:
 
 npm install
