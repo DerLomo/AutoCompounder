@@ -1,7 +1,7 @@
 [
 	{
-	"Token": ["token address", "farm address","pol id"],
-	"BANANA" :["0x5d47bAbA0d66083C52009271faF3F50DCc01023C","0x54aff400858Dcac39797a81894D9920f16972D1D",0],
+	"Token": ["token address", "pair address","pol id"],
+	"BANANA" :["0x5d47bAbA0d66083C52009271faF3F50DCc01023C","0x034293f21f1cce5908bc605ce5850df2b1059ac0",0],
 	"MATIC": ["0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4"],
 	"WMATIC": ["0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4"],
 	"USDC": ["0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174","0x019011032a7ac3a87ee885b6c08467ac46ad11cd"],
